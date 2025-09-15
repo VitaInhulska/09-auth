@@ -3,12 +3,15 @@
 import css from "./TagsMenu.module.css";
 import { useState } from "react";
 import Link from "next/link";
+import { useAuthStore } from "@/lib/store/authStore";
 
 const tags: string[] = ["Todo", "Work", "Personal", "Meeting", "Shopping"];
 
 export default function TagsMenu() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [isOpen, setIsOpen] = useState(false);
 
+  if (!isAuthenticated) return null;
   return (
     <div className={css.menuContainer}>
       <button className={css.menuButton} onClick={() => setIsOpen(!isOpen)}>
