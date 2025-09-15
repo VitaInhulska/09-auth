@@ -1,58 +1,86 @@
-import Link from "next/link";
-import css from "./EditProfilePage.module.css";
-import { getServerMe } from "@/lib/api/serverApi";
+"use client";
+
 import Image from "next/image";
-import { Metadata } from "next";
+import css from "./EditProfilePage.module.css";
+import { getMe, updateMe } from "@/lib/api/clientApi";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/lib/store/authStore";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const user = await getServerMe();
-  return {
-    title: `${user.username} - NoteHub`,
-    description: `Profile page ${user.username}`,
-    openGraph: {
-      title: `${user.username} - NoteHub`,
-      description: `Profile page ${user.username}`,
-      url: `https://notehub.example.com/profile`,
-      images: [
-        {
-          url: user.avatar,
-          width: 1200,
-          height: 630,
-          alt: `${user.username} Avatar`,
-        },
-      ],
-    },
+const EditProfile = () => {
+  const setUser = useAuthStore((state) => state.setUser);
+  const [userEmail, setUserEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const router = useRouter();
+
+  useEffect(() => {
+    getMe().then((user) => {
+      setUserEmail(user.email);
+      setUsername(user.username);
+      setAvatarUrl(user.avatar);
+    });
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUsername(e.target.value);
   };
-}
 
-const Profile = async () => {
-  const user = await getServerMe();
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+      await updateMe({ username });
+      setUser({ username, email: userEmail, avatar: avatarUrl });
+      router.push("/profile");
+    } catch (error) {
+      console.log("Error updating profile:", error);
+    }
+  };
 
   return (
     <main className={css.mainContent}>
       <div className={css.profileCard}>
-        <div className={css.header}>
-          <h1 className={css.formTitle}>Profile Page</h1>
-          <Link href="/profile/edit" className={css.editProfileButton}>
-            Edit Profile
-          </Link>
-        </div>
-        <div className={css.avatarWrapper}>
+        <h1 className={css.formTitle}>Edit Profile</h1>
+
+        {avatarUrl && (
           <Image
-            src={user.avatar}
+            src={avatarUrl}
             alt="User Avatar"
             width={120}
             height={120}
             className={css.avatar}
           />
-        </div>
-        <div className={css.profileInfo}>
-          <p>Username: {user.username}</p>
-          <p>Email: {user.email}</p>
-        </div>
+        )}
+        <form className={css.profileInfo} onSubmit={handleSubmit}>
+          <div className={css.usernameWrapper}>
+            <label htmlFor="username">Username:</label>
+            <input
+              id="username"
+              type="text"
+              className={css.input}
+              value={username}
+              onChange={handleChange}
+            />
+          </div>
+
+          <p>Email: {userEmail}</p>
+
+          <div className={css.actions}>
+            <button type="submit" className={css.saveButton}>
+              Save
+            </button>
+            <button
+              type="button"
+              className={css.cancelButton}
+              onClick={() => router.push("/profile")}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
       </div>
     </main>
   );
 };
 
-export default Profile;
+export default EditProfile;
